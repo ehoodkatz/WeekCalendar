@@ -44,7 +44,6 @@ public class Event {
         }
 
         public SetCurrentPageEvent(int direction) {
-
             this.direction = direction;
         }
 
@@ -52,6 +51,7 @@ public class Event {
     }
 
     public static class ResetEvent {
+
     }
 
     public static class SetSelectedDateEvent {
@@ -68,7 +68,6 @@ public class Event {
 
     public static class SetStartDateEvent {
 
-
         public SetStartDateEvent(DateTime startDate) {
             this.startDate = startDate;
         }
@@ -80,4 +79,15 @@ public class Event {
         private DateTime startDate;
     }
 
+    public static class SetFutureDayTextColor{
+        private boolean[] futureDays;
+
+        public SetFutureDayTextColor(boolean[] futureDays) {
+            this.futureDays = futureDays;
+        }
+
+        public boolean[] getFutureDays() {
+            return futureDays;
+        }
+    }
 }
