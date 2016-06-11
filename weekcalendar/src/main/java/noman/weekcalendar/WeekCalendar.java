@@ -33,11 +33,10 @@ import noman.weekcalendar.view.WeekPager;
  * Created by nor on 12/6/2015.
  */
 public class WeekCalendar extends LinearLayout {
-    private static final String TAG = "WeekCalendarTAG";
+    private final String TAG = WeekCalendar.class.getSimpleName();
     private OnDateClickListener listener;
     private TypedArray typedArray;
     private GridView daysName;
-
 
     public WeekCalendar(Context context) {
         super(context);
@@ -47,16 +46,15 @@ public class WeekCalendar extends LinearLayout {
     public WeekCalendar(Context context, AttributeSet attrs) {
         super(context, attrs);
         init(attrs);
-
     }
 
     public WeekCalendar(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init(attrs);
-
     }
 
     private void init(AttributeSet attrs) {
+
         if (attrs != null) {
             typedArray = getContext().obtainStyledAttributes(attrs, R.styleable.WeekCalendar);
         }
@@ -66,10 +64,9 @@ public class WeekCalendar extends LinearLayout {
             daysName = getDaysNames();
             addView(daysName, 0);
         }
+        BusProvider.getInstance().register(this);
         WeekPager weekPager = new WeekPager(getContext(), attrs);
         addView(weekPager);
-        BusProvider.getInstance().register(this);
-
     }
 
     /***
@@ -83,70 +80,92 @@ public class WeekCalendar extends LinearLayout {
             listener.onDateClick(event.getDateTime());
     }
 
+    @Subscribe
+    public void onSetFutureDayTextColor(Event.SetFutureDayTextColor event) {
+        ((GridDaysAdapter) daysName.getAdapter()).setFutureDays(event.getFutureDays());
+    }
+
     public void setOnDateClickListener(OnDateClickListener listener) {
         this.listener = listener;
     }
-
 
     private GridView getDaysNames() {
         daysName = new GridView(getContext());
         daysName.setSelector(new StateListDrawable());
         daysName.setNumColumns(7);
-
-        daysName.setAdapter(new BaseAdapter() {
-            private String[] days = getWeekDayNames();
-
-            public int getCount() {
-                return days.length;
-            }
-
-            @Override
-            public String getItem(int position) {
-                return days[position];
-            }
-
-            @Override
-            public long getItemId(int position) {
-                return 0;
-            }
-
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                if (convertView == null) {
-                    LayoutInflater inflater = LayoutInflater.from(getContext());
-                    convertView = inflater.inflate(R.layout.week_day_grid_item, null);
-                }
-                TextView day = (TextView) convertView.findViewById(R.id.daytext);
-                day.setText(days[position]);
-                if (typedArray != null) {
-                    day.setTextColor(typedArray.getColor(R.styleable.WeekCalendar_weekTextColor,
-                            Color.WHITE));
-                    day.setTextSize(TypedValue.COMPLEX_UNIT_PX, typedArray.getDimension(R.styleable
-                            .WeekCalendar_weekTextSize, day.getTextSize()));
-                }
-                return convertView;
-            }
-
-            private String[] getWeekDayNames() {
-                String[] names = DateFormatSymbols.getInstance().getShortWeekdays();
-                List<String> daysName = new ArrayList<>(Arrays.asList(names));
-                daysName.remove(0);
-                daysName.add(daysName.remove(0));
-
-                if (typedArray.getInt(R.styleable.WeekCalendar_dayNameLength, 0) == 0)
-                    for (int i = 0; i < daysName.size(); i++)
-                        daysName.set(i, daysName.get(i).substring(0, 1));
-                names = new String[daysName.size()];
-                daysName.toArray(names);
-                return names;
-
-            }
-        });
-        if (typedArray != null)
-            daysName.setBackgroundColor(typedArray.getColor(R.styleable
-                    .WeekCalendar_weekBackgroundColor, ContextCompat.getColor(getContext(), R
-                    .color.colorPrimary)));
+        daysName.setAdapter(new GridDaysAdapter());
+        if (typedArray != null) {
+            daysName.setBackgroundColor(typedArray.getColor(R.styleable.WeekCalendar_weekBackgroundColor, ContextCompat.getColor(getContext(), R.color.colorPrimary)));
+        }
         return daysName;
+    }
+
+    class GridDaysAdapter extends BaseAdapter {
+        private String[] days = getWeekDayNames();
+
+        boolean[] futureDays = new boolean[7];
+
+        public void setFutureDays(boolean[] futureDays) {
+            this.futureDays = futureDays;
+            notifyDataSetChanged();
+        }
+
+        public int getCount() {
+            return days.length;
+        }
+
+        @Override
+        public String getItem(int position) {
+            return days[position];
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return 0;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            if (convertView == null) {
+                LayoutInflater inflater = LayoutInflater.from(getContext());
+                convertView = inflater.inflate(R.layout.week_day_grid_item, null);
+            }
+            TextView day = (TextView) convertView.findViewById(R.id.daytext);
+            day.setText(days[position]);
+            if (typedArray != null) {
+                day.setTextColor(getWeekDayColor(position, typedArray));
+                day.setTextSize(TypedValue.COMPLEX_UNIT_PX, typedArray.getDimension(R.styleable.WeekCalendar_weekTextSize, day.getTextSize()));
+            }
+            return convertView;
+        }
+
+        private int getWeekDayColor(int position, TypedArray typedArray) {
+            if (typedArray != null) {
+                if (futureDays[position]) {
+                    return typedArray.getColor(R.styleable.WeekCalendar_futureDaysTextColor, Color.WHITE);
+                } else {
+                    return typedArray.getColor(R.styleable.WeekCalendar_weekTextColor, Color.WHITE);
+                }
+            }
+
+            return Color.WHITE;
+        }
+
+        private String[] getWeekDayNames() {
+            String[] names = DateFormatSymbols.getInstance().getShortWeekdays();
+            List<String> daysName = new ArrayList<>(Arrays.asList(names));
+            daysName.remove(0);
+            daysName.add(daysName.remove(0));
+
+            if (typedArray.getInt(R.styleable.WeekCalendar_dayNameLength, 0) == 0) {
+                for (int i = 0; i < daysName.size(); i++) {
+                    daysName.set(i, daysName.get(i).substring(0, 1));
+                }
+            }
+            names = new String[daysName.size()];
+            daysName.toArray(names);
+            return names;
+        }
     }
 
     public void moveToPrevious() {
@@ -161,14 +180,15 @@ public class WeekCalendar extends LinearLayout {
         BusProvider.getInstance().post(new Event.ResetEvent());
     }
 
-    public void setSelectedDate(DateTime selectedDate){
+    public void setSelectedDate(DateTime selectedDate) {
         BusProvider.getInstance().post(new Event.SetSelectedDateEvent(selectedDate));
     }
-    public void setStartDate(DateTime startDate){
+
+    public void setStartDate(DateTime startDate) {
         BusProvider.getInstance().post(new Event.SetStartDateEvent(startDate));
     }
-	
-	@Override
+
+    @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         BusProvider.getInstance().unregister(this);

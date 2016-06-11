@@ -8,6 +8,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 
 import org.joda.time.DateTime;
 
@@ -21,8 +22,8 @@ import static noman.weekcalendar.view.WeekPager.NUM_OF_PAGES;
  * Created by nor on 12/4/2015.
  */
 public class PagerAdapter extends FragmentStatePagerAdapter {
-    private static final String TAG = "PagerAdapter";
-    private int currentPage = NUM_OF_PAGES / 2;
+    private final String TAG = PagerAdapter.class.getSimpleName();
+    private int currentPage = NUM_OF_PAGES - 1;
     private DateTime date;
     private TypedArray typedArray;
     private Context context;
@@ -36,26 +37,25 @@ public class PagerAdapter extends FragmentStatePagerAdapter {
 
     @Override
     public Fragment getItem(int position) {
+        Log.d(TAG, "getItem() called with: " + "position = [" + position + "]");
         WeekFragment fragment = new WeekFragment();
         Bundle bundle = new Bundle();
 
-        if (position < currentPage)
+        if (position < currentPage) {
             bundle.putSerializable(DATE_KEY, getPerviousDate());
-        else if (position > currentPage)
+        } else if (position > currentPage) {
             bundle.putSerializable(DATE_KEY, getNextDate());
-        else
+        } else {
             bundle.putSerializable(DATE_KEY, getTodaysDate());
+        }
 
-        bundle.putFloat(WeekFragment.TEXT_SIZE_KEY, typedArray.getDimension(R.styleable
-                .WeekCalendar_daysTextSize, -1));
-        bundle.putInt(WeekFragment.TEXT_COLOR_KEY, typedArray.getColor(R.styleable
-                .WeekCalendar_daysTextColor, Color.WHITE));
-        bundle.putInt(WeekFragment.TODAYS_DATE_COLOR_KEY, typedArray.getColor(R.styleable
-                .WeekCalendar_todaysDateBgColor, ContextCompat.getColor(context, R.color
-                .colorAccent)));
-        bundle.putInt(WeekFragment.SELECTED_DATE_COLOR_KEY, typedArray.getColor(R.styleable
-                .WeekCalendar_selectedBgColor, ContextCompat.getColor(context, R.color
-                .colorAccent)));
+        bundle.putFloat(WeekFragment.TEXT_SIZE_KEY, typedArray.getDimension(R.styleable.WeekCalendar_daysTextSize, -1));
+        bundle.putInt(WeekFragment.TEXT_COLOR_KEY, typedArray.getColor(R.styleable.WeekCalendar_daysTextColor, Color.WHITE));
+        bundle.putInt(WeekFragment.TODAYS_DATE_COLOR_KEY, typedArray.getColor(R.styleable.WeekCalendar_todaysDateBgColor, ContextCompat.getColor(context, R.color.colorAccent)));
+        bundle.putInt(WeekFragment.SELECTED_DATE_COLOR_KEY, typedArray.getColor(R.styleable.WeekCalendar_selectedBgColor, ContextCompat.getColor(context, R.color.colorAccent)));
+        bundle.putInt(WeekFragment.SELECTED_DATE_TEXT_COLOR_KEY, typedArray.getColor(R.styleable.WeekCalendar_selectedTextColor, Color.WHITE));
+        bundle.putInt(WeekFragment.FUTURE_DATE_TEXT_COLOR_KEY, typedArray.getColor(R.styleable.WeekCalendar_futureDaysTextColor, Color.GRAY));
+        bundle.putBoolean(WeekFragment.SHOW_CURRENT_DATE_KEY, typedArray.getBoolean(R.styleable.WeekCalendar_showCurrentDate, false));
         fragment.setArguments(bundle);
         return fragment;
     }
@@ -78,16 +78,19 @@ public class PagerAdapter extends FragmentStatePagerAdapter {
     }
 
     public void swipeBack() {
-        date = date.plusDays(-7);
-        currentPage--;
-        currentPage = currentPage <= 1 ? NUM_OF_PAGES / 2 : currentPage;
+        Log.d(TAG, "swipeBack() called with: " + "");
+        if(currentPage - 1 > 0){
+            currentPage--;
+            date = date.plusDays(-7);
+        }
     }
 
-
     public void swipeForward() {
-        date = date.plusDays(7);
-        currentPage++;
-        currentPage = currentPage >= NUM_OF_PAGES - 1 ? NUM_OF_PAGES / 2 : currentPage;
+        Log.d(TAG, "swipeForward() called with: " + "");
+        if(currentPage + 1 < NUM_OF_PAGES){
+            date = date.plusDays(7);
+            currentPage++;
+        }
     }
 
    /* public DateTime getDate() {
@@ -106,5 +109,4 @@ public class PagerAdapter extends FragmentStatePagerAdapter {
         this.date = date;
     }
 */
-
 }
